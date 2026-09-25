@@ -1,0 +1,82 @@
+{
+  "name": "hollowframe",
+  "version": "0.13.0",
+  "totalBytes": 1014691,
+  "files": [
+    {
+      "path": "assets/barlow-condensed-latin-500-normal-BgYH2mbd.woff2",
+      "bytes": 21424,
+      "sha256": "460f141ec8f6c9a1516bfd2bd9fe71656246d7a9d04a0955faf53158d8970c4c"
+    },
+    {
+      "path": "assets/barlow-condensed-latin-600-normal-DepVgxBB.woff2",
+      "bytes": 22308,
+      "sha256": "215a93c696f442034a46fbb382958f753fda60e30490683aeea6b235fcbb2b66"
+    },
+    {
+      "path": "assets/barlow-condensed-latin-800-normal-BKzMuPgK.woff2",
+      "bytes": 22464,
+      "sha256": "2515494e8cc2ca07c86ea78766cfa104b796aa6ed5d66821c01d51dbb0b52bce"
+    },
+    {
+      "path": "assets/ibm-plex-mono-latin-400-normal-DMJ8VG8y.woff2",
+      "bytes": 14708,
+      "sha256": "08949f728dc52d528e69b1667d15c89a5686a4ee9a296ff90983985f99c380f7"
+    },
+    {
+      "path": "assets/ibm-plex-mono-latin-500-normal-DSY6xOcd.woff2",
+      "bytes": 14888,
+      "sha256": "01d285447409c8a588692162439a038b8cbd7871309ee20267b0d2d91c6e8e22"
+    },
+    {
+      "path": "assets/ibm-plex-mono-latin-600-normal-BgSNZQsw.woff2",
+      "bytes": 15620,
+      "sha256": "0d1f0b8d0722224e32e9f28261bdc86c79115be73444ae5eceb73976a1bcdf83"
+    },
+    {
+      "path": "assets/index-CERlFEfg.js",
+      "bytes": 203362,
+      "sha256": "43538ecec55b50e1868729bcefc8f68ceaa2fb058504b1229ab9a5aa04734481"
+    },
+    {
+      "path": "assets/index-LJRIDeWU.css",
+      "bytes": 30697,
+      "sha256": "2dfe0cd9e9628260d1bed75627ad07abc64b78d6ad91ed65ad9a5be82c776c2b"
+    },
+    {
+      "path": "assets/renderer-DsEo8bf1.js",
+      "bytes": 569767,
+      "sha256": "0d821cbfc5264049df1c9d43b9f3508814a1f06e1e5085155c49898f13bd1d54"
+    },
+    {
+      "path": "favicon.svg",
+      "bytes": 208,
+      "sha256": "371dc271f7d2f99e8a2d4ae10e4f1721102d1037c4827d3aef0fafafc084f546"
+    },
+    {
+      "path": "index.html",
+      "bytes": 1535,
+      "sha256": "fa45dd63891244fcd2f1504f5396af7f83d8576342115932b4b98100acbe5723"
+    },
+    {
+      "path": "licenses/Barlow-Condensed.txt",
+      "bytes": 6167,
+      "sha256": "046ee27d8bddc6b6ee08eee53c96dbf3ec1f6df561644e018507dd8ffcb11d31"
+    },
+    {
+      "path": "licenses/IBM-Plex-Mono.txt",
+      "bytes": 5299,
+      "sha256": "23b0a9d0c6d3f140a0b77e483c5cfa6bba574325ef5cb189ed9f2fec4884533f"
+    },
+    {
+      "path": "licenses/Three.txt",
+      "bytes": 1081,
+      "sha256": "bfe119ea4fd413f5f7ca3fcd63adb0c4a073ed39daa2fe7d3e6b769e21272601"
+    },
+    {
+      "path": "og.jpg",
+      "bytes": 85163,
+      "sha256": "5f57101026b7d6b80f69a9737ba6b897c6483b0448c210d1832ee2138c744863"
+    }
+  ]
+}
