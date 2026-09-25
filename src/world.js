@@ -112,14 +112,16 @@ export class World {
     return Math.max(0.5, Math.min(devicePixelRatio, cap) * this.resolutionScale);
   }
   // Dynamic resolution: trade a little sharpness for a steady frame rate on slower GPUs.
+  // Hysteresis: drop only after two slow checks in a row, recover only after four fast ones, so
+  // the image never visibly pumps between sharp and soft.
   adaptResolution(frameMs) {
-    const next =
-      frameMs > 21
-        ? Math.max(0.6, this.resolutionScale - 0.1)
-        : frameMs < 13
-          ? Math.min(1, this.resolutionScale + 0.05)
-          : this.resolutionScale;
+    this.slowChecks = frameMs > 22 ? (this.slowChecks || 0) + 1 : 0;
+    this.fastChecks = frameMs < 12 ? (this.fastChecks || 0) + 1 : 0;
+    let next = this.resolutionScale;
+    if (this.slowChecks >= 2) next = Math.max(0.65, next - 0.1);
+    else if (this.fastChecks >= 4) next = Math.min(1, next + 0.05);
     if (Math.abs(next - this.resolutionScale) < 0.001) return;
+    this.slowChecks = this.fastChecks = 0;
     this.resolutionScale = next;
     this.resize();
   }

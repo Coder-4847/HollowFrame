@@ -12,7 +12,8 @@ function boundary(w, ground, wall) {
   floor.material = floor.material.clone();
   floor.material.map = w.floorTexture;
   for (const z of [-36, 36]) w.solid(74, 7, 2, wall, 0, 3.5, z);
-  for (const x of [-36, 36]) w.solid(2, 7, 72, wall, x, 3.5, 0);
+  // Side walls sit 2 cm lower than the end walls so their shared corner tops never z-fight.
+  for (const x of [-36, 36]) w.solid(2, 6.98, 72, wall, x, 3.49, 0);
 }
 function station(w, pos, color) {
   w.solid(3, 1.35, 1.4, 0x384c4e, pos.x, 0.675, pos.z);

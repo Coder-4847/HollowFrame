@@ -55,7 +55,7 @@ export function dressSurfaces(w, map, id) {
       total = weights.reduce((a, b) => a + b, 0);
     let t = rand() * total;
     const s = surfaces[weights.findIndex((wt) => (t -= wt) <= 0)] || surfaces[0];
-    return { x: s.x + (rand() - 0.5) * s.w, z: s.z + (rand() - 0.5) * s.d, y: s.y };
+    return { x: s.x + (rand() - 0.5) * s.w, z: s.z + (rand() - 0.5) * s.d, y: s.y, s };
   };
   const dummy = new THREE.Object3D();
   // Grime decals.
@@ -79,7 +79,13 @@ export function dressSurfaces(w, map, id) {
   for (let n = 0; n < decalCount * 3 && placed < decalCount && surfaces.length; n++) {
     const p = pick(),
       size = 1.2 + rand() * 3.2;
-    if (occupied(p.x, p.z, p.y, 0.3)) continue;
+    // Keep the whole decal on its surface so none overhang ledges into the void.
+    if (
+      Math.abs(p.x - p.s.x) + size * 0.6 > p.s.w / 2 ||
+      Math.abs(p.z - p.s.z) + size * 0.6 > p.s.d / 2
+    )
+      continue;
+    if (occupied(p.x, p.z, p.y, size * 0.4)) continue;
     dummy.position.set(p.x, p.y + 0.012, p.z);
     dummy.rotation.set(0, rand() * Math.PI * 2, 0);
     dummy.scale.set(size, 1, size * (0.6 + rand() * 0.6));

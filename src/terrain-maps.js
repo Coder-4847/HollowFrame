@@ -45,6 +45,10 @@ function deck(w, x, z, width, depth, y, color) {
   const mesh = w.solid(width, 0.6, depth, color, x, y - 0.3, z);
   mesh.material = mesh.material.clone();
   mesh.material.map = w.floorTexture;
+  // Decks sit flush on buildings and terraces; bias them forward so shared faces never z-fight.
+  mesh.material.polygonOffset = true;
+  mesh.material.polygonOffsetFactor = -1;
+  mesh.material.polygonOffsetUnits = -2;
   return mesh;
 }
 function stairs(w, a, b, width = 7) {
@@ -79,7 +83,8 @@ function cover(w, x, y, z, width = 3) {
 }
 function boundary(w, b, color) {
   for (const z of [-b - 1, b + 1]) w.solid(b * 2 + 4, 9, 2, color, 0, 4.5, z);
-  for (const x of [-b - 1, b + 1]) w.solid(2, 9, b * 2 + 4, color, x, 4.5, 0);
+  // Side walls end inside the end walls and sit 2 cm lower so the corners never z-fight.
+  for (const x of [-b - 1, b + 1]) w.solid(2, 8.98, b * 2 + 2, color, x, 4.49, 0);
 }
 function hazard(w, x, y, z, radius, name, color = 0x91da81) {
   const marker = new THREE.Mesh(
@@ -115,7 +120,8 @@ export function buildSkyline(w) {
     [10, -18, 12],
   ];
   for (const [x, z, y] of roofs) {
-    w.solid(24, y + 18, 24, 0x454959, x, (y - 18) / 2, z);
+    // The tower stops 2 cm under its roof deck and 2 cm inside its edges: no coplanar faces.
+    w.solid(23.96, y + 17.98, 23.96, 0x454959, x, (y - 18.02) / 2, z);
     deck(w, x, z, 24, 24, y, 0x717a83);
     for (const dx of [-11.5, 11.5])
       for (let dz = -9; dz <= 9; dz += 3)

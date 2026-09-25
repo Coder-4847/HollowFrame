@@ -975,6 +975,10 @@ kbd {
   font-size: 28px;
   letter-spacing: 3px;
 }
+/* With a boss bar on screen, announcements drop below it instead of overlapping. */
+.announcement.below-boss {
+  top: calc(20% + 70px);
+}
 .announcement.visible {
   opacity: 1;
   transform: translate(-50%, 0);

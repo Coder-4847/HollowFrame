@@ -11,7 +11,7 @@ export class Ragdolls {
     enemy.root.updateMatrixWorld(true);
     const parts = enemy.meshes
       .filter((m) => m.visible && !['shield', 'core'].includes(m.userData.part))
-      .slice(0, 28);
+      .slice(0, 40);
     const bodies = parts.map((source, index) => {
       const mesh = new THREE.Mesh(source.geometry, source.material.clone());
       source.matrixWorld.decompose(mesh.position, mesh.quaternion, mesh.scale);

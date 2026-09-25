@@ -1,5 +1,5 @@
 import { updateArchitect } from './bosses.js';
-import { buildFactionModel } from './faction-models.js';
+import { buildEnemyModel, updateEnemyLook } from './enemy-models.js';
 import { updateFactionBoss } from './faction-bosses.js';
 import { modifier } from './upgrades.js';
 import * as THREE from 'three';
@@ -41,7 +41,6 @@ export class Enemies {
       repath: Math.random(),
       phase: Math.random() * 6,
       meshes: [],
-      limbs: [],
       legBroken: false,
       elite: elite && !d.boss,
       shield: d.shield || 0,
@@ -62,129 +61,7 @@ export class Enemies {
       deployCharges: 2,
       rewardScale: 1,
     };
-    const color = e.elite ? 0x9b765f : d.color;
-    const part = (bw, bh, bd, c, x, y, z, name) => {
-      const m = w.box(bw, bh, bd, c, x, y, z, root, ['sensor', 'core'].includes(name));
-      m.userData = { enemy: e, part: name };
-      e.meshes.push(m);
-      return m;
-    };
-    const s = d.height / 2.5;
-    if (d.faction !== 'choir') {
-      buildFactionModel(w, e);
-    } else if (type === 'architect') {
-      part(3.2, 1.7, 2.1, color, 0, 2.8, 0, 'body');
-      e.plate = part(2.4, 1.5, 0.22, 0x819c97, 0, 2.8, 1.13, 'armor');
-      e.core = part(1.1, 1, 0.25, 0xbda2fc, 0, 2.8, 1.06, 'core');
-      e.core.visible = false;
-      for (const x of [-1.15, 1.15])
-        for (const z of [-0.7, 0.7]) {
-          const leg = part(0.5, 1.9, 0.6, 0x35494a, x, 0.95, z, 'leg');
-          e.limbs.push(leg);
-          part(0.8, 0.3, 1, color, x, 0.15, z + 0.1, 'leg');
-        }
-      for (const side of [-1, 1]) {
-        const name = side < 0 ? 'weaponLeft' : 'weaponRight';
-        part(0.65, 1.6, 0.7, 0x586e77, side * 1.95, 3.4, 0, name);
-        part(0.38, 0.38, 1.3, 0xbaa0ed, side * 1.95, 3.5, 0.6, name);
-      }
-      e.rotor = new THREE.Mesh(new THREE.TorusGeometry(1.2, 0.22, 6, 24), w.material(0x849eab));
-      e.rotor.position.set(0, 4, 0);
-      root.add(e.rotor);
-      e.sensor = part(0.6, 0.17, 0.2, 0xcea5ff, 0, 4.1, 1.25, 'sensor');
-    } else if (d.boss) {
-      part(2.8, 1.9, 1.65, color, 0, 3.1, 0, 'body');
-      e.plate = part(2.4, 1.5, 0.24, 0xa2a995, 0, 3.1, 0.94, 'armor');
-      e.core = part(1.15, 1.05, 0.25, 0x8cf0e1, 0, 3.1, 0.88, 'core');
-      e.core.visible = false;
-      part(1.4, 0.7, 1.1, 0x43514d, 0, 4.75, 0, 'body');
-      e.sensor = part(0.8, 0.13, 0.1, 0xff854b, 0, 4.8, 0.6, 'sensor');
-      for (const x of [-1, 1]) {
-        const leg = part(0.65, 2.2, 0.8, 0x3c4844, x, 1.1, 0, 'leg');
-        e.limbs.push(leg);
-        part(0.95, 0.4, 1.4, color, x, 0.2, 0.15, 'leg');
-        const name = x < 0 ? 'weaponLeft' : 'weaponRight';
-        part(0.85, 1, 1.9, color, x * 1.9, 3.9, 0.2, name);
-        for (const dx of [-0.2, 0.2]) part(0.22, 0.22, 1.3, 0x263530, x * 1.9 + dx, 4, 0.95, name);
-        part(0.7, 0.1, 0.3, 0xffa24e, x * 1.9, 4.47, 0.4, name);
-      }
-      e.zone = new THREE.Mesh(
-        new THREE.RingGeometry(8.85, 9, 64),
-        new THREE.MeshBasicMaterial({
-          color: 0xff8a5e,
-          transparent: true,
-          opacity: 0.65,
-          side: THREE.DoubleSide,
-          depthWrite: false,
-        }),
-      );
-      e.zone.rotation.x = -Math.PI / 2;
-      e.zone.position.y = 0.045;
-      e.zone.visible = false;
-      root.add(e.zone);
-      part(3.1, 0.28, 1.9, 0xb3a274, 0, 4.25, 0, 'armor');
-      part(0.15, 1.1, 0.15, 0xff995b, 0, 5.25, 0, 'sensor');
-    } else if (type === 'skitter' || type === 'volatile') {
-      part(1, 0.42, 0.9, color, 0, 0.52, 0, 'body');
-      e.sensor = part(0.5, 0.12, 0.13, 0xff673b, 0, 0.72, 0.5, 'sensor');
-      for (const x of [-0.56, 0.56])
-        for (const z of [-0.35, 0.35]) {
-          const leg = part(0.18, 0.5, 0.2, 0x3b4340, x, 0.25, z, 'leg');
-          e.limbs.push(leg);
-        }
-      part(0.4, 0.16, 0.6, 0x3d4540, 0, 0.28, 0.55, 'body');
-      if (type === 'volatile') {
-        part(0.7, 0.3, 0.6, 0xeb8045, 0, 0.92, 0, 'sensor');
-        part(0.12, 0.5, 0.12, 0xffbd70, 0, 1.2, 0, 'sensor');
-      }
-    } else {
-      part(1.05 * s, 1.1 * s, 0.7 * s, color, 0, 1.45 * s, 0, 'body');
-      e.plate = part(0.95 * s, 0.75 * s, 0.18 * s, 0xadb2a0, 0, 1.48 * s, 0.43 * s, 'armor');
-      part(0.58 * s, 0.45 * s, 0.52 * s, 0x303f3b, 0, 2.22 * s, 0, 'body');
-      e.sensor = part(0.44 * s, 0.13 * s, 0.14 * s, 0xff7143, 0, 2.27 * s, 0.31 * s, 'sensor');
-      for (const x of [-0.34, 0.34]) {
-        const leg = part(0.28 * s, 0.88 * s, 0.36 * s, 0x333f3c, x * s, 0.45 * s, 0, 'leg');
-        e.limbs.push(leg);
-        part(0.39 * s, 0.22 * s, 0.6 * s, color, x * s, 0.12 * s, 0.1 * s, 'leg');
-      }
-      for (const x of [-0.77, 0.77]) {
-        const name = x < 0 ? 'weaponLeft' : 'weaponRight';
-        part(0.4 * s, 0.65 * s, 0.55 * s, color, x * s, 1.7 * s, 0, name);
-        part(0.22 * s, 0.22 * s, 1.15 * s, 0x28332f, x * s, 1.42 * s, 0.4 * s, name);
-      }
-      if (type === 'bastion') {
-        part(1.6, 0.65, 0.9, 0x696d5b, 0, 3.3, -0.25, 'armor');
-        part(0.3, 0.3, 0.3, 0xff8a4d, -0.52, 3.3, 0.3, 'sensor');
-        part(0.3, 0.3, 0.3, 0xff8a4d, 0.52, 3.3, 0.3, 'sensor');
-      }
-      if (type === 'bulwark') {
-        e.shieldMesh = part(1.6, 1.65, 0.18, 0x547887, 0, 1.25, 0.8, 'shield');
-        part(1.5, 0.08, 0.2, 0x97e2f1, 0, 2.1, 0.81, 'shield');
-      }
-      if (type === 'mender') {
-        e.repairMesh = part(0.7, 0.65, 0.4, 0x76c9a4, 0, 2.6, -0.15, 'repair');
-        part(0.12, 1.1, 0.12, 0x81e1b2, 0, 2.7, -0.2, 'repair');
-      }
-      if (type === 'lancer') {
-        part(0.2, 0.2, 1.6, 0x81799c, 0.8, 1.9, 0.5, 'weaponRight');
-        part(0.12, 0.8, 0.12, 0xbca0dd, -0.3, 3, 0, 'sensor');
-      }
-    }
-    if (type === 'fabricator') {
-      part(1.2, 1.3, 0.6, 0x8ea472, 0, 2.5, -0.65, 'deployer');
-      part(0.8, 0.15, 0.2, 0xb9e29c, 0, 3.35, -0.3, 'deployer');
-    }
-    if (type === 'cantor') {
-      for (const x of [-0.6, 0.6]) part(0.15, 1.4, 0.15, 0xe9cd8f, x, 3.1, 0, 'command');
-      part(1.4, 0.15, 0.15, 0xf4d598, 0, 3.8, 0, 'command');
-    }
-    if (type === 'shade' || d.cloak)
-      for (const m of e.meshes) {
-        m.material = m.material.clone();
-        m.material.transparent = true;
-        m.userData.ownedMaterial = true;
-      }
-    if (e.elite) part(d.radius * 1.5, 0.12, 0.15, 0xf4c075, 0, d.height + 0.2, 0, 'armor');
+    buildEnemyModel(w, e);
     this.list.push(e);
     this.targets.push(...e.meshes);
     root.updateMatrixWorld(true);
@@ -256,6 +133,7 @@ export class Enemies {
       if (e.components[part] <= 0) this.breakComponent(e, part);
     }
     e.hp -= actual;
+    e.hitFlash = 1;
     e.flinch = Math.min(1, (e.flinch || 0) + actual / 45);
     const armorHit = e.armor > 0 && !weak && part !== 'shield';
     if (armorHit) {
@@ -431,6 +309,8 @@ export class Enemies {
       e.repath -= dt;
       e.phase += dt * e.d.speed * 3;
       const p = e.root.position,
+        startX = p.x,
+        startZ = p.z,
         delta = player.clone().sub(p),
         distance = Math.max(0.01, delta.length()),
         origin = p.clone().add(new THREE.Vector3(0, e.d.height * 0.7, 0));
@@ -617,9 +497,14 @@ export class Enemies {
           floorAt(p, e.d.radius, g.world.colliders, 0.4, g.map.voidFloor ? -Infinity : 0),
           p.y - 12 * dt,
         );
-        for (let n = 0; n < e.limbs.length; n++)
-          e.limbs[n].rotation.x = Math.sin(e.phase + n * Math.PI) * 0.35;
       }
+      updateEnemyLook(e, dt, {
+        speed: Math.hypot(p.x - startX, p.z - startZ) / Math.max(dt, 1e-4),
+        warn: e.warn || e.chargeWarn || 0,
+        recent: g.elapsed - (e.firedAt ?? -9) < 0.6,
+        lookPitch: Math.atan2(eye.y - origin.y, Math.hypot(delta.x, delta.z)),
+        time: g.elapsed,
+      });
       if (e.d.boss) {
         if (e.stun <= 0) this.updateBoss(e, dt, origin, distance);
         continue;
@@ -645,6 +530,7 @@ export class Enemies {
               { color: e.d.shotColor },
             );
           g.audio.enemy(e.type, p, player, g.player.yaw);
+          e.firedAt = g.elapsed;
           e.attack =
             e.d.interval *
             (e.components.weaponLeft <= 0 || e.components.weaponRight <= 0 ? 1.6 : 1);
@@ -657,6 +543,7 @@ export class Enemies {
             continue;
           }
           g.player.damage(e.d.damage * diff.damage, p);
+          e.firedAt = g.elapsed;
           g.fx.trace(origin, eye, 0xff6c43);
           e.attack = e.d.interval;
         } else if (ranged && armed && e.sight && distance < 45) {
@@ -674,7 +561,13 @@ export class Enemies {
             );
         }
       }
-      if (e.sensor) e.sensor.scale.setScalar(e.warn > 0 ? 1.4 + Math.sin(g.elapsed * 30) * 0.2 : 1);
+      if (e.sensor) {
+        // Sensors have non-uniform part scales, so pulse relative to the built size.
+        const base = (e.sensor.userData.baseScale ??= e.sensor.scale.clone());
+        e.sensor.scale
+          .copy(base)
+          .multiplyScalar(e.warn > 0 ? 1.4 + Math.sin(g.elapsed * 30) * 0.2 : 1);
+      }
       if (
         e.warn > 0 &&
         (e.d.telegraph || ['bastion', 'lancer'].includes(e.type)) &&

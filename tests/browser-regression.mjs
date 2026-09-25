@@ -79,12 +79,15 @@ try {
     g.player.position.set(0, 0, 20);
     g.player.velocity.set(0, 0, 0);
     g.player.yaw = 0;
-    g.player.pitch = Math.atan2(2.27 - 1.72, 9.69);
-    g.player.update(0);
     g.enemies.clear();
     const p = g.player.position.clone();
     p.z = 10;
-    g.enemies.spawn('warden', p);
+    const warden = g.enemies.spawn('warden', p);
+    g.world.scene.updateMatrixWorld(true);
+    // Aim at the model's actual sensor rather than a hard-coded height.
+    const sensor = warden.sensor.getWorldPosition(p.clone());
+    g.player.pitch = Math.atan2(sensor.y - 1.72, 20 - sensor.z);
+    g.player.update(0);
     g.world.scene.updateMatrixWorld(true);
     g.weapons.switch(2);
     g.weapons.cooldown = 0;

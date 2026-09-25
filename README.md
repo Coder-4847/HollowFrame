@@ -4,9 +4,16 @@
 
 **Play it:** https://coder-4847.github.io/HollowFrame/ (desktop browser with WebGL2, mouse and keyboard).
 
-**Version 0.11.0 — Weight** overhauls the look of every arena and the feel of movement. Twenty regular enemy types and six bosses span three factions and eight arenas, with eighteen guns, three main melee kits, four difficulties, and eight-wave operations.
+**Version 0.12.0 — Menagerie** rebuilds every enemy and fixes rendering flicker. Twenty regular enemy types and six bosses span three factions and eight arenas, with eighteen guns, three main melee kits, four difficulties, and eight-wave operations.
 
-### What changed in 0.11.0
+### What changed in 0.12.0
+
+- **New enemy models for all 26 types.** The Choir are articulated mechs with reverse-jointed legs, armoured torsos with glowing vents, visor heads, pauldrons, gun-pod arms that raise to aim, backpacks and exhausts, plus role kit: Bastion missile racks, a framed translucent Bulwark tower shield, the Mender's repair mast, the Lancer's rail rifle, the Fabricator's drone bay and the Cantor's halo. Skitters and Volatiles are four-legged crawlers. The Brood are insects with segmented swaying abdomens, spiked carapaces, clustered glowing eyes, snapping mandibles, pulsing acid sacs, horns and six clawed legs. The Veil are hovering crystalline wraiths with crowned heads, halos, blade or orb arms, energy shields and orbiting shards. Bosses scale these up with missile racks, rotors and exposed cores.
+- **Enemy animation:** walk cycles driven by actual movement speed, a tripod gait for insects, hovering and bobbing for the Veil, head tracking, and arms that raise to aim. Glow pulses while an attack is telegraphed, and bodies flash white when hit. Every part is still a hit target with its original gameplay role, so breaking an arm still disarms it.
+- **Fixed flicker:** Skyline's roof decks sat exactly on their buildings (about 1,900 m² of coplanar faces), so they z-fought as you moved. Towers now stop just below and inside their decks, decks carry a depth bias, and perimeter-wall corners no longer overlap.
+- **Fixed:** grime decals no longer overhang ledges; dynamic resolution uses hysteresis so the image never pumps between sharp and soft; map announcements drop below the boss health bar.
+
+### 0.11.0 — Weight
 
 **Visuals**
 - Post-processing: HDR bloom on lights and emissives, ground-truth ambient occlusion (High), colour grade, vignette, subtle grain, and edge chromatic aberration. Medium keeps bloom and grading; Low renders directly.
@@ -150,7 +157,7 @@ Plain ES modules, Three.js, and Vite. Models, textures, maps, sound, and effects
 | `post.js`, `atmosphere.js`, `surfaces.js`, `set-dressing.js` | Post-processing, sky and dust, procedural surface maps, rubble/decals/cables |
 | `input.js`, `player.js`, `weapons.js`, `viewmodel.js` | Pointer lock, movement, firing, reload, heat, charge, melee and first-person models |
 | `movement.js`, `feel.js` | Parkour physics and its camera, sound and particle feedback |
-| `enemies.js`, `bosses.js`, `navigation.js` | Components, tactics, bosses and elevation-aware pathfinding |
+| `enemies.js`, `enemy-models.js`, `bosses.js`, `navigation.js` | Components, tactics, articulated models and animation, bosses and elevation-aware pathfinding |
 | `projectiles.js`, `vfx.js`, `audio.js` | Pooled projectiles/particles/tracers, smoke, debris and synthesized audio |
 | `director.js`, `waves.js`, `upgrades.js`, `environment.js` | Encounter composition, rewards, temporary upgrades and hazards |
 | `polish.js`, `markings.js` | Validated accessibility settings, contextual hints and instanced field markings |
