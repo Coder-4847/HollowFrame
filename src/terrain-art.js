@@ -45,7 +45,8 @@ export function surfaceTexture(kind) {
   }
   const tex = new THREE.CanvasTexture(canvas);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(kind === 'salt' ? 15 : 10, kind === 'salt' ? 15 : 10);
+  // Geometry UVs are in world tiles (see surfaces.js); salt crust repeats every ~7.5 m.
+  tex.repeat.setScalar(4 / (kind === 'salt' ? 7.5 : 8.8));
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }

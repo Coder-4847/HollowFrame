@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { WEAPONS } from './data.js';
 import { damp } from './core.js';
 import { MELEE } from './content.js';
+import { buildGun } from './viewmodel.js';
 export class Weapons {
   constructor(game) {
     this.game = game;
@@ -11,6 +12,7 @@ export class Weapons {
     // Always present (intensity 0 when idle) so shaders never recompile mid-fight.
     this.light = new THREE.PointLight(0xffb66b, 0, 9, 2);
     this.light.position.set(0.25, -0.1, -1.2);
+    this.light.layers.enable(1);
     game.world.camera.add(this.light);
     this.ray = new THREE.Raycaster();
     this.reset();
@@ -53,67 +55,22 @@ export class Weapons {
     this.bolt = null;
     const w = this.game.world,
       d = this.current;
-    const add = (a, b, c, color, x, y, z) => w.box(a, b, c, color, x, y, z, this.root);
-    add(0.22, 0.23, d.length * 0.55, 0x344340, 0, 0, 0);
-    add(0.28, 0.09, d.length * 0.65, d.color, 0, 0.14, 0);
-    add(0.09, 0.09, d.length * 0.6, 0x242f2d, 0, 0.05, -d.length * 0.45);
-    add(0.12, 0.3, 0.18, 0x26312f, 0, -0.22, 0.1);
-    add(0.08, 0.05, 0.08, 0xb7d9be, 0, 0.22, -0.2);
-    add(0.07, 0.06, 0.04, 0x141f1b, 0, 0.21, 0.18);
-    this.bolt = add(0.055, 0.07, 0.2, 0x94a69a, 0.15, 0.025, 0.03);
-    this.magazine = add(0.12, 0.35, 0.15, 0x766c4f, 0, -0.28, -0.1);
-    add(0.07, 0.035, 0.23, 0x93c7b1, 0.15, 0.09, 0.02);
-    for (let n = 0; n < 5; n++) {
-      add(0.285, 0.025, 0.025, 0x253630, 0, 0.195, -0.25 + n * 0.08);
-      add(0.02, 0.045, 0.035, 0x142921, 0.145, 0.08, -0.2 + n * 0.06);
-    }
-    add(0.025, 0.12, 0.075, 0xd88750, 0.16, -0.015, 0.14);
-    if (d.id === 'needle' || d.id === 'lance') {
-      add(0.12, 0.13, 0.4, 0x26332f, 0, 0.28, 0);
-      add(0.09, 0.09, 0.02, 0x85ddc8, 0, 0.28, 0.21);
-    }
-    if (d.id === 'breach') {
-      for (const x of [-0.085, 0.085]) add(0.095, 0.095, 0.72, 0x55625a, x, 0.02, -0.42);
-      this.pump = add(0.24, 0.14, 0.25, 0x7e6950, 0, -0.025, -0.35);
-    } else this.pump = null;
-    if (['verdict', 'anvil'].includes(d.id)) {
-      for (let n = 0; n < 6; n++) {
-        const a = (n * Math.PI) / 3;
-        add(0.08, 0.08, 0.2, 0xa1997c, Math.cos(a) * 0.11, Math.sin(a) * 0.11, -0.06);
-      }
-    }
-    if (d.explosive) {
-      add(0.35, 0.33, 0.85, 0x666d48, 0, 0.05, -0.2);
-      add(0.4, 0.4, 0.1, 0x222f27, 0, 0.05, -0.65);
-    }
-    if (d.energy) {
-      for (let n = 0; n < 4; n++) {
-        const coil = add(0.32, 0.045, 0.065, 0x73cbe2, 0, 0.16, -0.28 + n * 0.14);
-        coil.userData.coil = true;
-      }
-      add(0.12, 0.2, 0.25, 0x354a63, 0, -0.17, -0.18);
-    }
-    if (d.id === 'ballast') add(0.42, 0.32, 0.28, 0x5f6854, 0, -0.25, -0.08);
-    if (d.id === 'mortar')
-      for (const x of [-0.14, 0.14]) add(0.12, 0.16, 0.3, 0x879776, x, -0.1, -0.25);
-    if (d.category === 'secondary') {
-      this.root.scale.setScalar(0.58);
-    }
-    // Gloved hands and armored forearms, deliberately angular.
-    add(0.19, 0.22, 0.28, 0x70786a, 0.07, -0.2, 0.22);
-    add(0.2, 0.23, 0.48, 0x303e37, 0.13, -0.27, 0.5);
-    add(0.18, 0.19, 0.22, 0x70786a, -0.14, -0.17, -0.2);
-    add(0.18, 0.2, 0.42, 0x303e37, -0.24, -0.27, 0.03);
-    this.blade = add(0.045, 0.55, 0.07, 0x9cddca, -0.3, 0.25, -0.15);
-    this.blade.visible = false;
-    this.hammer = add(0.48, 0.23, 0.22, 0x829790, -0.3, 0.49, -0.15);
-    this.hammer.visible = false;
+    const parts = buildGun(w, this.root, d);
+    this.bolt = parts.bolt;
+    this.boltBase = parts.bolt.position.z;
+    this.magazine = parts.magazine;
+    this.magazineBase = parts.magazineBase;
+    this.pump = parts.pump || null;
+    this.pumpBase = parts.pump?.position.z || 0;
+    this.blade = parts.blade;
+    this.hammer = parts.hammer;
+    this.sightHeight = parts.sightHeight;
     this.flash = new THREE.Mesh(
       new THREE.ConeGeometry(0.14, 0.42, 5),
       new THREE.MeshBasicMaterial({ color: 0xffd7a1 }),
     );
     this.flash.rotation.x = -Math.PI / 2;
-    this.flash.position.set(0, 0.05, -d.length * 0.8);
+    this.flash.position.copy(parts.muzzle);
     this.flash.visible = false;
     this.root.add(this.flash);
     this.root.scale.setScalar(d.category === 'secondary' ? 0.58 : 0.65);
@@ -121,15 +78,14 @@ export class Weapons {
       if (m.isMesh) {
         m.castShadow = false;
         m.receiveShadow = false;
-        m.renderOrder = 10;
         if (m !== this.flash) m.material = m.material.clone();
         if (m.userData.coil) {
           m.material.emissive.set(0x4eb0ca);
           m.material.emissiveIntensity = 0.8;
         }
-        m.material.depthTest = false;
       }
     });
+    w.viewmodel(this.root);
   }
   switch(index) {
     if (index === this.index || !this.equipped.includes(index)) return;
@@ -146,6 +102,7 @@ export class Weapons {
   disposeModel() {
     this.root.traverse((m) => {
       if (m.isMesh) m.material.dispose();
+      if (m.userData.lens && m.geometry.type === 'PlaneGeometry') m.geometry.dispose();
     });
     if (this.flash) this.flash.geometry.dispose();
   }
@@ -384,7 +341,7 @@ export class Weapons {
     this.kickDebt -= settle;
     g.player.pitch -= settle;
     this.magazine.position.y =
-      -0.28 -
+      this.magazineBase -
       (this.reloadTime > 0 && !this.current.energy
         ? Math.sin(
             Math.min(
@@ -395,40 +352,52 @@ export class Weapons {
         : 0);
     this.magazine.rotation.z = this.reloadTime > 0 ? 0.15 : 0;
     const ads = this.aiming,
-      // Keep solid sights below the reticle, with extra room for scope housings and launchers.
-      aimHeight = ['needle', 'lance'].includes(this.current.id)
-        ? -0.34
-        : this.current.explosive
-          ? -0.29
-          : -0.23,
+      // Reflex sights centre their lens on the reticle; scopes and iron sights sit just below it.
+      aimHeight =
+        this.sightHeight !== null
+          ? -this.sightHeight * this.root.scale.y
+          : ['needle', 'lance'].includes(this.current.id)
+            ? -0.34
+            : -0.23,
       move = Math.hypot(g.player.velocity.x, g.player.velocity.z),
       bob = g.settings.reducedMotion
         ? 0
         : Math.sin(g.player.bob) * 0.016 * Math.min(1, move / 4) * (ads ? 0.15 : 1),
       visualRecoil = this.recoil * (ads ? 0.25 : 1);
-    this.root.position.x = damp(this.root.position.x, ads ? 0 : 0.32, 15, dt);
+    const feel = g.player.feel.gun,
+      feelScale = ads ? 0.25 : 1;
+    this.root.position.x = damp(
+      this.root.position.x,
+      (ads ? 0 : 0.32) + feel.x * feelScale,
+      15,
+      dt,
+    );
     this.root.position.y = damp(
       this.root.position.y,
-      (ads ? aimHeight : -0.32) +
+      (ads ? aimHeight : -0.3) +
+        feel.y * feelScale +
         bob -
         (this.reloadTime > 0 || g.player.parkour?.mantle ? 0.25 : 0) -
         this.switchTime,
       14,
       dt,
     );
-    this.root.position.z = -0.8 + visualRecoil;
+    this.root.position.z = -0.8 + visualRecoil + feel.z;
     this.root.rotation.set(
-      visualRecoil + (g.player.sprint ? -0.35 : 0),
-      g.player.sprint ? 0.3 : 0,
-      (this.reloadTime > 0 ? -0.5 : 0) + (this.meleeTime > 0.4 ? -0.9 : 0) + bob * 0.4,
+      visualRecoil + (g.player.sprint ? -0.35 : 0) + feel.pitch * feelScale,
+      g.player.sprint ? 0.3 : ads ? 0 : 0.07,
+      (this.reloadTime > 0 ? -0.5 : 0) +
+        (this.meleeTime > 0.4 ? -0.9 : 0) +
+        bob * 0.4 +
+        feel.roll * feelScale,
     );
     this.blade.visible = this.meleeTime > 0.35;
     this.hammer.visible = this.blade.visible && g.save.melee === 'hammer';
     this.flash.visible = false;
-    this.bolt.position.z = 0.03 + this.recoil * 0.5;
+    this.bolt.position.z = this.boltBase + this.recoil * 0.5;
     if (this.pump)
       this.pump.position.z =
-        -0.35 + Math.sin(Math.min(1, this.cooldown * this.current.rate) * Math.PI) * 0.12;
+        this.pumpBase + Math.sin(Math.min(1, this.cooldown * this.current.rate) * Math.PI) * 0.12;
     this.flash.rotation.z = Math.random() * Math.PI;
   }
 }

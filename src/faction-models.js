@@ -14,7 +14,13 @@ export function buildFactionModel(w, e) {
       );
     const m = new THREE.Mesh(
       w.geometries.get(key),
-      w.material(color, ['sensor', 'core', 'shield', 'repair'].includes(name)),
+      // Large glowing parts (shields, healing organs) glow softly so bloom stays readable.
+      w.material(
+        color,
+        ['sensor', 'core', 'shield', 'repair'].includes(name),
+        'organic',
+        ['shield', 'repair'].includes(name) ? 0.55 : 1.1,
+      ),
     );
     m.scale.set(width, height, depth);
     m.position.set(x, y, z);

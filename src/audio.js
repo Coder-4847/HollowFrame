@@ -39,6 +39,27 @@ export class AudioSystem {
       this.reverbSend.gain.value = 0.22;
       this.reverbSend.connect(this.reverb);
       this.reverb.connect(this.effectsBus);
+      // Continuous movement layers: filtered noise whose level and colour follow the player.
+      this.loops = {};
+      for (const [name, type, freq] of [
+        ['wind', 'bandpass', 700],
+        ['slide', 'bandpass', 1800],
+      ]) {
+        const source = this.context.createBufferSource(),
+          filter = this.context.createBiquadFilter(),
+          gain = this.context.createGain();
+        source.buffer = this.noise;
+        source.loop = true;
+        filter.type = type;
+        filter.frequency.value = freq;
+        filter.Q.value = name === 'slide' ? 1.4 : 0.6;
+        gain.gain.value = 0;
+        source.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.effectsBus);
+        source.start();
+        this.loops[name] = { filter, gain };
+      }
     }
     this.context.resume().catch(() => {});
     this.master.gain.value = this.volume;
@@ -129,7 +150,46 @@ export class AudioSystem {
     // Distant shots lose their high end, which helps judge range by ear.
     this.burst(0.12, 0.08 * level, Math.max(500, 3200 - distance * 70), { pan, wet: true });
   }
+  // Smoothly steer a loop's level and filter frequency (ignored before audio starts).
+  loop(name, level, freq) {
+    const loop = this.loops?.[name];
+    if (!loop) return;
+    const t = this.context.currentTime;
+    loop.gain.gain.setTargetAtTime(level, t, 0.06);
+    if (freq) loop.filter.frequency.setTargetAtTime(freq, t, 0.08);
+  }
+  jump(power = 1) {
+    this.burst(0.22, 0.05 * power, 900, { filter: 'bandpass', q: 0.8, sweep: 2600 });
+    this.tone(150, 0.08, 0.04 * power, 'sine', 90);
+  }
+  land(impact) {
+    const weight = Math.min(1, impact / 16);
+    this.tone(95, 0.12 + weight * 0.2, 0.08 + weight * 0.22, 'sine', 38);
+    this.burst(0.08 + weight * 0.18, 0.06 + weight * 0.16, 500 + weight * 700, { sweep: 120 });
+    if (weight > 0.55) {
+      // Hard landings add armour rattle and a short room tail.
+      this.burst(0.05, 0.08 * weight, 4200, { filter: 'highpass', delay: 0.02 });
+      this.burst(0.5, 0.05 * weight, 400, { wet: true, sweep: 90 });
+    }
+  }
+  wallKick() {
+    this.tone(120, 0.14, 0.18, 'sine', 45);
+    this.burst(0.07, 0.14, 2600, { filter: 'bandpass', q: 1.2 });
+    this.burst(0.3, 0.06, 1100, { filter: 'bandpass', sweep: 3000, delay: 0.03 });
+  }
+  grab() {
+    this.burst(0.06, 0.1, 3000, { filter: 'bandpass', q: 2 });
+    this.tone(180, 0.1, 0.1, 'triangle', 90);
+  }
+  step(heavy = false, pan = 0) {
+    this.tone(heavy ? 85 : 110, 0.07, heavy ? 0.07 : 0.045, 'sine', 50, false, pan);
+    this.burst(0.05, heavy ? 0.045 : 0.03, heavy ? 900 : 1300, { pan });
+  }
   update(dt, wave, state) {
+    if (state !== 'playing') {
+      this.loop('wind', 0);
+      this.loop('slide', 0);
+    }
     if (!this.context || state !== 'playing') return;
     this.musicClock -= dt;
     if (this.musicClock <= 0) {

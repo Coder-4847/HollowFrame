@@ -131,6 +131,7 @@ class Game {
     this.state = 'playing';
     this.weapons.root.visible = !this.meleeClass.active;
     this.meleeClass.root.visible = this.meleeClass.active;
+    this.world.warmup();
     this.ui.hud();
     this.notice(`${this.map.name} / SEVER THE SIGNAL`, 3);
     this.audio.start();
@@ -270,8 +271,9 @@ class Game {
       : this.map.fogDensity || (this.map.id === 'whiteout' ? 0.015 : 0.012);
     this.world.scene.background.set(active ? 0x10191e : this.map.sky);
     this.world.scene.fog.color.set(active ? 0x162025 : this.map.fog);
-    const hemi = this.world.scene.children.find((o) => o.isHemisphereLight);
-    if (hemi) hemi.intensity = active ? 0.6 : 2.3;
+    this.world.blackout = active;
+    this.world.hemi.intensity = active ? 0.45 : this.world.hemiBase;
+    this.world.scene.environmentIntensity = active ? 0.15 : 0.55;
     this.world.sun.intensity = active ? 0.6 : 3;
   }
   openUpgrades() {
@@ -331,19 +333,24 @@ class Game {
     this.frameMs = (this.frameMs || frameMs) * 0.95 + frameMs * 0.05;
     this.last = now;
     if (document.hidden) return;
+    // Re-evaluate render resolution every two seconds of active play.
+    if (this.state === 'playing' && (this.resolutionClock = (this.resolutionClock || 0) + dt) > 2) {
+      this.resolutionClock = 0;
+      this.world.adaptResolution(this.frameMs);
+    }
     if (this.state === 'playing') {
       this.elapsed += dt;
       this.noticeTime = Math.max(0, this.noticeTime - dt);
       this.player.update(dt);
       if (this.state !== 'playing') {
         this.input.end();
-        this.world.render();
+        this.world.render(dt);
         return;
       }
       updateEnvironment(this, dt);
       if (this.state !== 'playing') {
         this.input.end();
-        this.world.render();
+        this.world.render(dt);
         return;
       }
       this.world.focusShadows(this.player.position);
@@ -352,7 +359,7 @@ class Game {
       this.enemies.update(dt);
       if (this.state !== 'playing') {
         this.input.end();
-        this.world.render();
+        this.world.render(dt);
         return;
       }
       this.world.scene.updateMatrixWorld(true);
@@ -385,7 +392,7 @@ class Game {
       this.state === 'playing' ||
       now - (this.lastRender || 0) >= (this.state === 'menu' ? 33 : 100)
     ) {
-      this.world.render();
+      this.world.render(Math.min(0.1, (now - (this.lastRender || now)) / 1000));
       this.lastRender = now;
     }
   }

@@ -4,9 +4,29 @@
 
 **Play it:** https://coder-4847.github.io/HollowFrame/ (desktop browser with WebGL2, mouse and keyboard).
 
-**Version 0.10.0 — Refit** is a polish and correctness pass over 0.9.0 *Aftershock*. Twenty regular enemy types and six bosses span three factions and eight arenas, with eighteen guns, three main melee kits, four difficulties, and eight-wave operations.
+**Version 0.11.0 — Weight** overhauls the look of every arena and the feel of movement. Twenty regular enemy types and six bosses span three factions and eight arenas, with eighteen guns, three main melee kits, four difficulties, and eight-wave operations.
 
-### What changed in 0.10.0
+### What changed in 0.11.0
+
+**Visuals**
+- Post-processing: HDR bloom on lights and emissives, ground-truth ambient occlusion (High), colour grade, vignette, subtle grain, and edge chromatic aberration. Medium keeps bloom and grading; Low renders directly.
+- Image-based reflections on every metal and painted surface.
+- Procedural surface detail generated at startup: panel seams, rivets, scratches, grime, and matching roughness and normal maps. World-scale UVs keep texel density constant on every box and cylinder. Brood and Veil enemies use a separate organic skin with veins and mottling.
+- A gradient sky with sun halo and drifting cloud banding that fades into each map's fog, plus floating dust motes lit by the sun colour.
+- Set dressing on every map: rubble along wall bases, grime decals on floors and decks, and cables sagging between tall structures (a few draw calls, seeded per map).
+- A rebuilt first-person arsenal: receivers, rails and reflex optics, vented handguards, round barrels and muzzle brakes, angled magazines, skeleton stocks, gloved hands with fingers and armoured sleeves, and per-family parts (twin-barrel pump shotgun, revolver drums, launcher tubes, energy coils). Reflex sights frame the crosshair when aiming; the weapon renders in its own pass, so it never clips into walls or picks up post effects.
+- Dynamic resolution keeps the frame rate steady on slower GPUs.
+
+**Movement feel**
+- A sprung camera rig: landings dip the view in proportion to fall height and nod the head; slides drop, lean into your steering and punch the FOV; wall kicks roll the view away from the wall; mantles pitch the head up and show both hands gripping and pushing off the ledge.
+- Heavier physics: a stronger fall than rise (jump speed compensated so every gap and ledge route is unchanged), weightier ground acceleration and braking, and hard landings that briefly cost speed. **Hold crouch as you land at speed to roll straight into a slide** and keep your momentum.
+- Speed-driven FOV, radial speed blur and wind.
+- Weapon sway that lags behind mouse look, with dip, lean and slide cant.
+- Sound: jump whoosh, landing thuds scaled by impact, wall-kick impacts, ledge grabs, cadence-synced footsteps that are heavier at a sprint, and a continuous slide scrape.
+- Particles: dust bursts on jumps, landings and wall kicks, plus a slide trail with sparks at high speed.
+- Reduced-motion removes every camera offset, speed blur and FOV kick while keeping the sounds and particles.
+
+### 0.10.0 — Refit
 
 - **Fixed:** the three large arenas (Skyline, Saltreach, Spillway) clamped movement to ±35 m on the north–south axis, so players, enemies and remains could not reach half of each map and Saltreach's insertion point was unreachable.
 - **Fixed:** sun shadows only covered a fixed 90 m square around the origin; the shadow frustum now follows the player (texel-snapped to avoid shimmer).
@@ -80,6 +100,7 @@ Results show score, kills, accuracy, weak hits, damage, time, components, elites
 - **Wall jump:** press Space while airborne beside a vertical wall to kick away and upward. Two kicks maximum before landing; the second must use a different wall.
 - **Mantle:** hold W and press Space toward a reachable ledge (up to two metres above your feet). Climbing requires a clear standing space and path, lasts 0.38 seconds, and lowers your weapon. Firing/melee is blocked during the climb; you can still take damage.
 - **Forgiving jumps:** 100 ms edge grace and 120 ms input buffering help with late/early presses.
+- **Landing roll:** hard landings briefly slow you down. Hold C/Ctrl while landing at speed to go straight into a slide instead.
 
 These mechanics use solid geometry, including the new rooftop platforms and facility ledges. Movement constants and collision helpers live in src/movement.js. Reduced-motion settings remain supported; no forced wall-camera roll is added.
 
@@ -126,7 +147,9 @@ Plain ES modules, Three.js, and Vite. Models, textures, maps, sound, and effects
 | `data.js`, `content.js`, `expansion.js` | Weapons, machines, difficulties, maps, equipment and upgrades |
 | `world.js`, `map.js`, `maps.js`, `expansion-maps.js`, `terrain-maps.js` | Renderer, arena construction, resource disposal and collision geometry |
 | `arena-details.js`, `terrain-art.js` | Instanced environmental detail, procedural surfaces and rooftop machinery |
-| `input.js`, `player.js`, `weapons.js` | Pointer lock, movement, firing, reload, heat, charge and melee |
+| `post.js`, `atmosphere.js`, `surfaces.js`, `set-dressing.js` | Post-processing, sky and dust, procedural surface maps, rubble/decals/cables |
+| `input.js`, `player.js`, `weapons.js`, `viewmodel.js` | Pointer lock, movement, firing, reload, heat, charge, melee and first-person models |
+| `movement.js`, `feel.js` | Parkour physics and its camera, sound and particle feedback |
 | `enemies.js`, `bosses.js`, `navigation.js` | Components, tactics, bosses and elevation-aware pathfinding |
 | `projectiles.js`, `vfx.js`, `audio.js` | Pooled projectiles/particles/tracers, smoke, debris and synthesized audio |
 | `director.js`, `waves.js`, `upgrades.js`, `environment.js` | Encounter composition, rewards, temporary upgrades and hazards |

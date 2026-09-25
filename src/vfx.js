@@ -19,6 +19,7 @@ export class Effects {
     );
     this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.mesh.frustumCulled = false;
+    this.mesh.userData.noAO = true;
     world.scene.add(this.mesh);
     this.dummy = new THREE.Object3D();
     this.cursor = 0;

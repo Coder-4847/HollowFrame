@@ -5,7 +5,14 @@ export const MOVEMENT = Object.freeze({
   standing: 1.8,
   crouched: 1.1,
   gravity: 21,
-  jump: 7,
+  // Falling pulls harder than rising for a weightier arc; the extra take-off speed keeps the
+  // original jump distance so every authored gap and ledge route still works.
+  fallGravity: 1.18,
+  jump: 7.3,
+  groundAccel: 11,
+  groundBrake: 15,
+  airControl: 4,
+  hardLanding: 12,
   slideSpeed: 11,
   slideDuration: 0.8,
   slideCooldown: 1,
@@ -100,6 +107,23 @@ export class Parkour {
     this.wallLock = 0;
     this.mantle = null;
     this.label = '';
+    this.stumble = 0;
+  }
+  // Movement events drive camera, audio and particle feedback (see feel.js). Physics never
+  // depends on a listener being present.
+  emit(type, data = {}) {
+    this.player.feel?.event(type, data);
+  }
+  startSlide() {
+    const p = this.player,
+      len = Math.hypot(p.velocity.x, p.velocity.z),
+      speed = Math.max(MOVEMENT.slideSpeed, len + 1.5);
+    p.velocity.x = (p.velocity.x / len) * speed;
+    p.velocity.z = (p.velocity.z / len) * speed;
+    this.slide = MOVEMENT.slideDuration;
+    this.cooldown = MOVEMENT.slideCooldown;
+    this.stumble = 0;
+    this.emit('slide', { speed });
   }
   update(dt) {
     const p = this.player,
@@ -110,6 +134,7 @@ export class Parkour {
     this.cooldown = Math.max(0, this.cooldown - dt);
     this.wallLock = Math.max(0, this.wallLock - dt);
     this.momentum = Math.max(0, this.momentum - dt);
+    this.stumble = Math.max(0, this.stumble - dt);
     this.buffer = i.tap('Space') ? m.buffer : Math.max(0, this.buffer - dt);
     this.coyote = p.grounded ? m.coyote : Math.max(0, this.coyote - dt);
     const wants = g.settings.toggleCrouch
@@ -134,6 +159,7 @@ export class Parkour {
           p.grounded = true;
           this.kicks = 0;
           this.lastWall = null;
+          this.emit('mantleEnd');
         }
         return;
       }
@@ -146,14 +172,8 @@ export class Parkour {
       p.sprint &&
       Math.hypot(p.velocity.x, p.velocity.z) > 5.5 &&
       this.cooldown === 0
-    ) {
-      const len = Math.hypot(p.velocity.x, p.velocity.z);
-      p.velocity.x = (p.velocity.x / len) * m.slideSpeed;
-      p.velocity.z = (p.velocity.z / len) * m.slideSpeed;
-      this.slide = m.slideDuration;
-      this.cooldown = m.slideCooldown;
-      g.audio.burst(0.15, 0.05, 500);
-    }
+    )
+      this.startSlide();
     this.slide = Math.max(0, this.slide - dt);
     if (!wants || !p.grounded) this.slide = 0;
     p.crouch = wants || headBlocked || this.slide > 0;
@@ -168,9 +188,11 @@ export class Parkour {
         p.velocity.set(0, 0, 0);
         p.grounded = false;
         this.label = 'MANTLING';
+        this.emit('mantle', { rise: target.y - p.position.y });
         return;
       }
       if (this.coyote > 0 && !headBlocked && (!wants || this.slide > 0)) {
+        this.emit('jump', { slide: this.slide > 0 });
         if (this.slide > 0) {
           this.momentum = 0.65;
           i.crouchToggle = false;
@@ -193,12 +215,14 @@ export class Parkour {
           this.buffer = 0;
           this.coyote = 0;
           this.momentum = 0.4;
-          g.audio.tone(200, 0.1, 0.05, 'triangle', 450);
+          this.emit('wallKick', { nx: wall.nx, nz: wall.nz });
         }
       }
     }
     const speed =
       (p.crouch ? 2.8 : p.sprint ? 8 : 5.3) *
+      // A hard landing briefly costs speed; landing into a slide avoids it.
+      (1 - Math.min(0.55, this.stumble * 1.6)) *
       (g.meleeClass?.active
         ? g.meleeClass.guard
           ? 0.65
@@ -217,7 +241,14 @@ export class Parkour {
       p.velocity.x *= factor;
       p.velocity.z *= factor;
     } else {
-      const control = this.momentum > 0 ? 1.2 : p.grounded ? 16 : 4;
+      const control =
+        this.momentum > 0
+          ? 1.2
+          : p.grounded
+            ? x || z
+              ? m.groundAccel
+              : m.groundBrake
+            : m.airControl;
       p.velocity.x = damp(p.velocity.x, tx, control, dt);
       p.velocity.z = damp(p.velocity.z, tz, control, dt);
     }
@@ -244,7 +275,7 @@ export class Parkour {
         p.grounded ? 0.4 : 0,
         g.map?.voidFloor ? -Infinity : 0,
       );
-      p.velocity.y -= m.gravity * step;
+      p.velocity.y -= m.gravity * (p.velocity.y < 0 ? m.fallGravity : 1) * step;
       let y = p.position.y + p.velocity.y * step;
       if (p.velocity.y > 0)
         for (const b of boxes)
@@ -257,9 +288,17 @@ export class Parkour {
             p.velocity.y = 0;
           }
       if (y <= floor) {
-        if (p.velocity.y < -4) {
-          p.shake = 0.08;
-          g.audio.burst(0.08, 0.06, 400);
+        if (!p.grounded) {
+          const impact = -p.velocity.y,
+            speed = Math.hypot(p.velocity.x, p.velocity.z),
+            rolled = wants && speed > 5 && this.cooldown === 0 && impact > 4;
+          if (impact > m.hardLanding && !rolled)
+            this.stumble = Math.min(0.35, (impact - m.hardLanding) * 0.05);
+          this.emit('land', { impact, rolled });
+          if (rolled) {
+            p.grounded = true;
+            this.startSlide();
+          }
         }
         y = floor;
         p.velocity.y = 0;

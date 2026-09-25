@@ -71,8 +71,7 @@ export class MeleeClass {
     const add = (a, b, d, color, x, y, z, parent = this.weapon, emissive = false) => {
       const m = w.box(a, b, d, color, x, y, z, parent, emissive);
       m.material = m.material.clone();
-      m.material.depthTest = false;
-      m.renderOrder = 12;
+      m.castShadow = false;
       return m;
     };
     add(0.1, spear ? 1.8 : 0.42, 0.1, 0x45576a, 0, 0, 0);
@@ -115,6 +114,7 @@ export class MeleeClass {
     add(0.12, 0.55, 0.15, c, 0, 0, 0, this.shield, true);
     this.shield.position.set(-0.48, -0.3, -0.72);
     this.shield.visible = this.game.save.meleeKit === 'aegis';
+    w.viewmodel(this.root);
     this.root.visible = false;
   }
   defend(amount, from) {

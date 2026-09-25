@@ -38,7 +38,8 @@ try {
         const ray = new THREE.Raycaster();
         let blocked = 0;
         const meshes = g.weapons.root.children.filter(
-          (m) => m.isMesh && m.visible && m !== g.weapons.flash,
+          // Reflex lenses are transparent and intentionally framed around the reticle.
+          (m) => m.isMesh && m.visible && m !== g.weapons.flash && !m.userData.lens,
         );
         // Keep a usable target area clear, not just a single pixel at the crosshair.
         for (const x of [-0.06, 0, 0.06])

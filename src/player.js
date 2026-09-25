@@ -1,4 +1,5 @@
 import { Parkour } from './movement.js';
+import { MovementFeel } from './feel.js';
 import * as THREE from 'three';
 import { clamp, damp } from './core.js';
 import { modifier } from './upgrades.js';
@@ -7,6 +8,8 @@ export class Player {
     this.game = game;
     this.position = new THREE.Vector3();
     this.velocity = new THREE.Vector3();
+    this.feel = new MovementFeel(this);
+    this.feel.buildHands(game.world);
     this.reset();
   }
   reset() {
@@ -23,7 +26,7 @@ export class Player {
     this.shake = 0;
     this.sprint = false;
     this.crouch = false;
-    this.lastStep = 0;
+    this.feel.reset();
     if (this.parkour) this.parkour.reset();
     else this.parkour = new Parkour(this);
   }
@@ -38,29 +41,34 @@ export class Player {
       1.48,
     );
     this.parkour.update(dt);
+    this.feel.update(dt);
     this.eye = damp(this.eye, this.crouch ? 1 : 1.72, 14, dt);
     this.bob += dt * Math.hypot(this.velocity.x, this.velocity.z) * 1.7;
     this.hurt = Math.max(0, this.hurt - dt);
     this.shake = damp(this.shake, 0, 12, dt);
     const moving =
-      Math.hypot(this.velocity.x, this.velocity.z) > 1 && this.grounded && this.parkour.slide <= 0;
-    if (moving && g.elapsed - this.lastStep > (this.sprint ? 0.28 : 0.4)) {
-      g.audio.burst(0.04, 0.025, 250);
-      this.lastStep = g.elapsed;
-    }
-    const c = g.world.camera;
+        Math.hypot(this.velocity.x, this.velocity.z) > 1 &&
+        this.grounded &&
+        this.parkour.slide <= 0,
+      feel = this.feel,
+      c = g.world.camera;
     c.position.copy(this.position);
-    c.position.y += this.eye + (moving && !s.reducedMotion ? Math.sin(this.bob * 2) * 0.025 : 0);
+    c.position.y +=
+      this.eye +
+      feel.cameraY +
+      (moving && !s.reducedMotion ? Math.abs(Math.sin(this.bob)) * 0.045 - 0.02 : 0);
     c.rotation.set(
-      this.pitch + (Math.random() - 0.5) * this.shake * (s.reducedMotion ? 0 : s.shake),
+      this.pitch +
+        feel.cameraPitch +
+        (Math.random() - 0.5) * this.shake * (s.reducedMotion ? 0 : s.shake),
       this.yaw,
-      (Math.random() - 0.5) * this.shake * (s.reducedMotion ? 0 : s.shake) * 0.25,
+      feel.cameraRoll + (Math.random() - 0.5) * this.shake * (s.reducedMotion ? 0 : s.shake) * 0.25,
     );
     const fov = g.weapons.aiming
       ? g.weapons.current.id === 'needle'
         ? 39
         : 58
-      : s.fov + (this.sprint && !s.reducedMotion ? 6 : 0);
+      : s.fov + (this.sprint && !s.reducedMotion ? 6 : 0) + feel.fov;
     c.fov = damp(c.fov, fov, 12, dt);
     c.updateProjectionMatrix();
     if (i.tap('KeyQ')) g.useEquipment();

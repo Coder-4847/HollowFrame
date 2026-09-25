@@ -1,4 +1,5 @@
 import { dressArena } from './arena-details.js';
+import { dressSurfaces } from './set-dressing.js';
 import { buildSkyline, buildSaltreach, buildSpillway } from './terrain-maps.js';
 import { addFieldMarkings } from './markings.js';
 import { buildCinderline, buildDeepwell } from './expansion-maps.js';
@@ -180,6 +181,7 @@ export function loadMap(world, id) {
     spillway: buildSpillway,
   }[def.id](world);
   dressArena(world, map, def.id);
+  dressSurfaces(world, map, def.id);
   addFieldMarkings(world, map, def);
   world.bounds = map.bounds || 35;
   world.voidFloor = !!map.voidFloor;

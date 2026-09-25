@@ -1,3 +1,4 @@
+import { lowQuality } from './low-quality.mjs';
 import { chromium } from '@playwright/test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -17,6 +18,7 @@ const check = (name, value) => {
   console.log('PASS', name);
 };
 try {
+  await lowQuality(page);
   await page.goto('http://127.0.0.1:5173');
   await page.waitForFunction(() => !!window.__HOLLOWFRAME__);
   await page.getByRole('button', { name: /SELECT OPERATION/ }).click();
@@ -93,6 +95,9 @@ try {
       () => __HOLLOWFRAME__.save.loadout.length === 5 && __HOLLOWFRAME__.save.credits === 300,
     ),
   );
+  // The main page is finished; close it so its render loop does not starve the isolated
+  // launches below of the (software) renderer.
+  await page.close();
   const restricted = await browser.newPage();
   restricted.on('pageerror', (e) => errors.push(e.message));
   await restricted.addInitScript(() =>
