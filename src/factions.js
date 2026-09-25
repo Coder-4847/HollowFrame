@@ -1,0 +1,165 @@
+export const FACTIONS = {
+  choir: {
+    name: 'THE CHOIR',
+    description: 'Machine formations, artillery and repair units.',
+    color: '#e3b06e',
+    bosses: ['conductor', 'architect'],
+  },
+  brood: {
+    name: 'THE BROOD',
+    description: 'Chitinous swarms, charging brutes and acid-spitting nests.',
+    color: '#b8d47a',
+    bosses: ['broodmother', 'dreadmaw'],
+  },
+  veil: {
+    name: 'THE VEIL',
+    description: 'Alien hunters, prism shields and energy weapons.',
+    color: '#bca6f5',
+    bosses: ['hierophant', 'prismarch'],
+  },
+};
+export function normalizeFactions(value) {
+  const selected = Object.keys(FACTIONS).filter((id) => value?.[id] === true);
+  return Object.fromEntries(
+    Object.keys(FACTIONS).map((id) => [
+      id,
+      selected.length ? selected.includes(id) : id === 'choir',
+    ]),
+  );
+}
+export const FACTION_ROLES = {
+  brood: {
+    skitter: 'nipper',
+    warden: 'bilecaster',
+    bulwark: 'carapace',
+    mender: 'broodkeeper',
+    bastion: 'bilecaster',
+    lancer: 'bilecaster',
+    volatile: 'spore',
+    fabricator: 'broodkeeper',
+    cantor: 'carapace',
+    shade: 'nipper',
+  },
+  veil: {
+    skitter: 'thrall',
+    warden: 'prism',
+    bulwark: 'prism',
+    mender: 'weaver',
+    bastion: 'seer',
+    lancer: 'seer',
+    volatile: 'phaseblade',
+    fabricator: 'weaver',
+    cantor: 'prism',
+    shade: 'phaseblade',
+  },
+};
+const unit = (
+  faction,
+  name,
+  hp,
+  armor,
+  speed,
+  radius,
+  height,
+  cost,
+  color,
+  attack,
+  damage,
+  interval,
+  extra = {},
+) => ({
+  faction,
+  name,
+  hp,
+  armor,
+  speed,
+  radius,
+  height,
+  cost,
+  reward: cost * 22,
+  color,
+  attack,
+  damage,
+  interval,
+  ...extra,
+});
+export const FACTION_ENEMIES = {
+  nipper: unit('brood', 'NIPPER', 48, 0, 6.3, 0.6, 1.05, 1, 0x84984e, 'melee', 10, 1),
+  carapace: unit('brood', 'CARAPACE', 310, 190, 2, 1.15, 2.8, 5, 0x626e37, 'melee', 26, 1.8, {
+    charger: true,
+  }),
+  bilecaster: unit('brood', 'BILECASTER', 145, 30, 2.3, 0.7, 2.5, 3, 0x9ba746, 'acid', 12, 3, {
+    shotSpeed: 13,
+    splash: 1.8,
+    volley: 3,
+    shotColor: 0xb8ed56,
+    telegraph: 0.9,
+  }),
+  broodkeeper: unit('brood', 'BROODKEEPER', 210, 70, 1.7, 1.1, 3.3, 5, 0x727245, 'acid', 11, 3.3, {
+    summons: 'nipper',
+    shotSpeed: 16,
+    shotColor: 0xb8ed56,
+  }),
+  spore: unit('brood', 'SPORE BURSTER', 55, 0, 5.2, 0.6, 1.2, 2, 0xc4a753, 'suicide', 30, 1, {
+    deathBlast: 3.5,
+  }),
+  thrall: unit('veil', 'HOLLOW THRALL', 70, 10, 4.5, 0.65, 2.4, 1, 0x5f6286, 'melee', 12, 1.1),
+  prism: unit('veil', 'PRISM GUARD', 155, 45, 2.7, 0.7, 2.8, 3, 0x8882bb, 'energy', 10, 2.3, {
+    shield: 110,
+    volley: 3,
+    shotColor: 0xb294ff,
+  }),
+  seer: unit('veil', 'FAR SEER', 125, 25, 2.3, 0.7, 3, 4, 0x73729c, 'energy', 25, 3.3, {
+    shotSpeed: 40,
+    telegraph: 1.25,
+    shotColor: 0xc3b3ff,
+    desiredRange: 25,
+  }),
+  weaver: unit('veil', 'LIFE WEAVER', 145, 35, 2.5, 0.7, 2.8, 4, 0x6a9aab, 'energy', 9, 2.6, {
+    healer: true,
+    shotColor: 0x86dbed,
+  }),
+  phaseblade: unit('veil', 'PHASE BLADE', 110, 20, 5.8, 0.65, 2.6, 3, 0x8b6caa, 'melee', 22, 1.3, {
+    cloak: true,
+  }),
+  broodmother: unit(
+    'brood',
+    'THE BROODMOTHER',
+    2200,
+    360,
+    1.3,
+    1.65,
+    4.8,
+    22,
+    0x8b864a,
+    'boss',
+    20,
+    3,
+    { boss: true, reward: 720, pattern: 'hatch', summons: 'nipper' },
+  ),
+  dreadmaw: unit('brood', 'DREADMAW', 2500, 450, 1.7, 1.65, 5.2, 24, 0x65763a, 'boss', 27, 3, {
+    boss: true,
+    reward: 780,
+    pattern: 'rupture',
+  }),
+  hierophant: unit(
+    'veil',
+    'THE HIEROPHANT',
+    2150,
+    320,
+    1.6,
+    1.65,
+    5.2,
+    22,
+    0x9b85bf,
+    'boss',
+    18,
+    3,
+    { boss: true, reward: 720, pattern: 'nova' },
+  ),
+  prismarch: unit('veil', 'PRISMARCH', 2400, 400, 1.4, 1.65, 5.5, 24, 0x747fbb, 'boss', 24, 3, {
+    boss: true,
+    reward: 780,
+    pattern: 'beam',
+  }),
+};
