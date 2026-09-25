@@ -9,6 +9,8 @@ const DARK = 0x222b29,
   GLOVE = 0x4d5249,
   SLEEVE = 0x2f3b36,
   GLASS = 0x8fe6d6;
+// Shared by every reflex sight; never disposed so its shader stays compiled.
+let lensMaterial;
 export function buildGun(world, root, d) {
   const L = d.length,
     accent = d.color,
@@ -20,15 +22,15 @@ export function buildGun(world, root, d) {
     box(0.1, 0.02, 0.12, DARK, 0, y - 0.05, z);
     for (const x of [-0.045, 0.045]) box(0.012, 0.08, 0.1, DARK, x, y - 0.005, z);
     box(0.09, 0.012, 0.1, DARK, 0, y + 0.035, z);
-    const lens = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.078, 0.07),
-      new THREE.MeshBasicMaterial({
-        color: GLASS,
-        transparent: true,
-        opacity: 0.12,
-        depthWrite: false,
-      }),
-    );
+    if (!world.geometries.has('reflex-lens'))
+      world.geometries.set('reflex-lens', new THREE.PlaneGeometry(0.078, 0.07));
+    lensMaterial ??= new THREE.MeshBasicMaterial({
+      color: GLASS,
+      transparent: true,
+      opacity: 0.12,
+      depthWrite: false,
+    });
+    const lens = new THREE.Mesh(world.geometries.get('reflex-lens'), lensMaterial);
     lens.position.set(0, y, z - 0.03);
     lens.userData.lens = true;
     root.add(lens);

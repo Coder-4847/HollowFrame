@@ -237,6 +237,33 @@ export class AudioSystem {
     this.burst(0.9, volume, 700, { sweep: 90, wet: true });
     this.tone(70, 0.6, volume, 'sine', 15);
   }
+  // Faction-specific destruction layered over the explosion body. size: 0 small, 1 heavy, 2 boss.
+  death(faction, distance = 0, size = 0) {
+    const level = Math.max(0.04, 1 / (1 + distance * 0.08)),
+      weight = 1 + size * 0.6;
+    if (faction === 'brood') {
+      this.burst(0.35 * weight, 0.22 * level, 800, { sweep: 160, wet: true });
+      this.tone(210, 0.28 * weight, 0.12 * level, 'sawtooth', 38);
+      this.burst(0.12, 0.12 * level, 2400, { filter: 'bandpass', q: 3, delay: 0.05 });
+    } else if (faction === 'veil') {
+      for (const [n, f] of [1760, 2350, 3130, 2790].entries())
+        this.tone(f, 0.25 + n * 0.08, 0.05 * level, 'triangle', f * 0.7, false, 0, n * 0.03, true);
+      this.burst(0.18, 0.16 * level, 5200, { filter: 'highpass', wet: true });
+      this.tone(90, 0.5 * weight, 0.14 * level, 'sine', 30);
+    } else {
+      this.explosion(distance);
+      this.burst(0.09, 0.16 * level, 1900, { filter: 'bandpass', q: 1.6 });
+      this.tone(320, 0.16, 0.08 * level, 'square', 60, false, 0, 0.02);
+    }
+    if (size > 0) {
+      this.burst(0.8 + size * 0.6, 0.18 * level * weight, 260, {
+        sweep: 50,
+        wet: true,
+        delay: 0.1,
+      });
+      this.tone(48, 0.9 + size * 0.5, 0.2 * level, 'sine', 20, false, 0, 0.08);
+    }
+  }
   ui() {
     this.tone(650, 0.07, 0.08, 'sine', 900);
   }

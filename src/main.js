@@ -18,7 +18,7 @@ import { Enemies } from './enemies.js';
 import { Projectiles } from './projectiles.js';
 import { Waves } from './waves.js';
 import { UI } from './ui.js';
-import { WEAPONS } from './data.js';
+import { WEAPONS, ENEMIES } from './data.js';
 import { readSave, saveData } from './core.js';
 
 class Game {
@@ -131,7 +131,10 @@ class Game {
     this.state = 'playing';
     this.weapons.root.visible = !this.meleeClass.active;
     this.meleeClass.root.visible = this.meleeClass.active;
-    this.world.warmup();
+    // Draws everything once (arena, effects, guns, every enemy variant) so play never hitches.
+    this.enemies.prewarm(
+      Object.keys(ENEMIES).filter((type) => this.save.factions[ENEMIES[type].faction || 'choir']),
+    );
     this.ui.hud();
     this.notice(`${this.map.name} / SEVER THE SIGNAL`, 3);
     this.audio.start();

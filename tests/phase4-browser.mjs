@@ -1,3 +1,4 @@
+import { lowQuality, settled } from './low-quality.mjs';
 import { chromium } from '@playwright/test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -20,6 +21,7 @@ const check = (name, value) => {
   console.log('PASS', name);
 };
 try {
+  await lowQuality(page);
   await page.goto('http://127.0.0.1:5173');
   await page.waitForFunction(() => !!window.__HOLLOWFRAME__);
   check(
@@ -64,6 +66,7 @@ try {
   await page.getByRole('button', { name: /SELECT OPERATION/ }).click();
   await page.getByRole('button', { name: /DEPLOY TO ASHWORKS/ }).click();
   await page.waitForFunction(() => !!document.pointerLockElement);
+  await settled(page);
   await page.evaluate(() => {
     __HOLLOWFRAME__.waves.breakTime = 999;
   });
@@ -170,6 +173,7 @@ try {
   );
   await page.getByRole('button', { name: /RESUME OPERATION/ }).click();
   await page.waitForFunction(() => !!document.pointerLockElement);
+  await settled(page);
   await page.evaluate(() => {
     const g = __HOLLOWFRAME__;
     g.waves.index = 0;

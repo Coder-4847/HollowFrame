@@ -1,4 +1,4 @@
-import { lowQuality } from './low-quality.mjs';
+import { lowQuality, settled } from './low-quality.mjs';
 import { chromium } from '@playwright/test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -38,6 +38,7 @@ try {
   await page.getByRole('button', { name: /SELECT OPERATION/ }).click();
   await page.getByRole('button', { name: /DEPLOY TO/ }).click();
   await page.waitForFunction(() => !!document.pointerLockElement);
+  await settled(page);
   await page.mouse.down();
   await page.waitForTimeout(120);
   await page.mouse.up();

@@ -67,6 +67,30 @@ export class Enemies {
     root.updateMatrixWorld(true);
     return e;
   }
+  // Compile every shader variant the selected factions can produce (living models, cloaked
+  // bodies and fading corpses) before the fight, so no spawn or death ever stalls a frame.
+  prewarm(types) {
+    const w = this.game.world,
+      holder = new THREE.Group();
+    for (const [n, type] of types.entries()) {
+      const d = ENEMIES[type],
+        e = {
+          id: -1 - n,
+          type,
+          d,
+          root: new THREE.Group(),
+          meshes: [],
+          elite: n === 0,
+          components: {},
+        };
+      buildEnemyModel(w, e);
+      const corpse = e.meshes[0].material.clone();
+      corpse.transparent = true;
+      e.root.add(new THREE.Mesh(e.meshes[0].geometry, corpse));
+      holder.add(e.root);
+    }
+    w.warmup(holder);
+  }
   visible(from, to) {
     const dir = to.clone().sub(from),
       distance = dir.length();
@@ -192,19 +216,21 @@ export class Enemies {
     e.alive = false;
     const g = this.game,
       p = e.root.position.clone().add(new THREE.Vector3(0, e.d.height * 0.5, 0));
-    g.fx.burst(p, 0xffb45c, e.d.boss ? 60 : e.type === 'bastion' ? 40 : 23, e.d.boss ? 15 : 6);
-    g.fx.burst(p, 0x87968c, 15, 5);
-    g.audio.explosion(p.distanceTo(g.player.position));
+    const distance = p.distanceTo(g.player.position),
+      heavy = e.d.boss || e.d.radius > 1 || e.d.height > 3.2;
+    g.fx.blasts.death(e, p);
+    g.audio.death(e.d.faction || 'choir', distance, e.d.boss ? 2 : heavy ? 1 : 0);
+    // Nearby heavy kills and every boss kill shake the view.
+    if (heavy && distance < 25)
+      g.player.shake = Math.max(g.player.shake, (e.d.boss ? 0.2 : 0.07) * (1 - distance / 25));
     g.fx.ragdolls.spawn(e, e.deathImpulse || new THREE.Vector3(0, 2, 1));
     g.world.scene.remove(e.root);
-    for (const m of e.meshes) if (m.userData.ownedMaterial) m.material.dispose();
+    // Per-enemy materials are left to the garbage collector rather than disposed: disposing the
+    // last user of a shader makes three.js discard it and recompile (a hitch) on the next spawn.
     if (e.rotor) e.rotor.geometry.dispose();
     if (e.zone) {
       e.zone.geometry.dispose();
-      e.zone.material.dispose();
     }
-    g.fx.debris(p, e.d.color, e.d.boss ? 14 : 8);
-    g.fx.smoke(p, e.d.boss ? 4 : 2);
     g.stats.kills++;
     if (e.d.boss) g.stats.bosses = (g.stats.bosses || 0) + 1;
     g.stats.score += Math.round(e.d.reward * (e.elite ? 1.5 : 1) * e.rewardScale);
@@ -218,7 +244,14 @@ export class Enemies {
     g.player.armor = Math.min(50, g.player.armor + 2);
     this.targets = this.targets.filter((m) => m.userData.enemy !== e);
     if (e.type === 'volatile' || e.d.deathBlast)
-      g.projectiles.explode(p, e.d.damage * g.difficulty.damage, e.d.deathBlast || 3, false);
+      g.projectiles.explode(
+        p,
+        e.d.damage * g.difficulty.damage,
+        e.d.deathBlast || 3,
+        false,
+        false,
+        e.d.faction === 'brood' ? 'acid' : 'hostile',
+      );
   }
   updateBoss(e, dt, origin, distance) {
     if (e.d.faction !== 'choir') return updateFactionBoss(this, e, dt, origin, distance);
@@ -581,11 +614,9 @@ export class Enemies {
   clear() {
     for (const e of this.list) {
       this.game.world.scene.remove(e.root);
-      for (const m of e.meshes) if (m.userData.ownedMaterial) m.material.dispose();
       if (e.rotor) e.rotor.geometry.dispose();
       if (e.zone) {
         e.zone.geometry.dispose();
-        e.zone.material.dispose();
       }
     }
     this.list = [];

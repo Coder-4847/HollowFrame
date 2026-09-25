@@ -1,4 +1,4 @@
-import { lowQuality } from './low-quality.mjs';
+import { lowQuality, settled } from './low-quality.mjs';
 import { chromium } from '@playwright/test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -23,6 +23,7 @@ try {
   await page.getByRole('button', { name: /SELECT OPERATION/ }).click();
   await page.getByRole('button', { name: /DEPLOY TO/ }).click();
   await page.waitForFunction(() => !!document.pointerLockElement);
+  await settled(page);
   await page.evaluate(() => {
     const g = __HOLLOWFRAME__;
     g.waves.breakTime = 999;
@@ -115,6 +116,7 @@ try {
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: /RESTART OPERATION/ }).click();
   await page.waitForFunction(() => !!document.pointerLockElement);
+  await settled(page);
   check(
     'restart resets movement state',
     await page.evaluate(() => {

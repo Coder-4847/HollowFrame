@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Ragdolls } from './ragdolls.js';
+import { Blasts } from './blasts.js';
 import { floorAt } from './core.js';
 export class Effects {
   constructor(world) {
@@ -20,6 +21,9 @@ export class Effects {
     this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.mesh.frustumCulled = false;
     this.mesh.userData.noAO = true;
+    // Create the per-instance colour buffer now: adding it on the first burst would change the
+    // shader variant and force a compile in the middle of the first fight.
+    for (let i = 0; i < this.max; i++) this.mesh.setColorAt(i, new THREE.Color(0xffffff));
     world.scene.add(this.mesh);
     this.dummy = new THREE.Object3D();
     this.cursor = 0;
@@ -84,6 +88,7 @@ export class Effects {
       return { mesh, life: 0, max: 1, size: 1 };
     });
     this.glowCursor = 0;
+    this.blasts = new Blasts(world, this);
   }
   glow(pos, color, size = 0.4, life = 0.1) {
     if (this.world.particlesEnabled === false || this.world.reducedMotion) return;
@@ -178,6 +183,7 @@ export class Effects {
   }
   update(dt) {
     this.ragdolls.update(dt);
+    this.blasts.update(dt);
     this.mesh.visible = this.world.particlesEnabled !== false;
     for (const g of this.glows) {
       g.life -= dt;
@@ -236,6 +242,7 @@ export class Effects {
   }
   clear() {
     this.ragdolls.clear();
+    this.blasts.clear();
     for (const g of this.glows) {
       g.life = 0;
       g.mesh.visible = false;

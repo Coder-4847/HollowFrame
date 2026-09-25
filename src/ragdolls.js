@@ -53,7 +53,7 @@ export class Ragdolls {
   remove(corpse) {
     for (const b of corpse.bodies) {
       this.world.scene.remove(b.mesh);
-      b.mesh.material.dispose();
+      // Not disposed: keeps the fading-corpse shader compiled (see Enemies.prewarm).
     }
     this.items = this.items.filter((c) => c !== corpse);
   }

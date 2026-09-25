@@ -31,12 +31,9 @@ export class Projectiles {
     p.radius = radius;
     p.mesh.scale.setScalar(friendly ? 1.4 : radius ? 2 : 1);
   }
-  explode(pos, damage, radius, friendly, equipment = false) {
+  explode(pos, damage, radius, friendly, equipment = false, kind = friendly ? 'fire' : 'hostile') {
     const g = this.game;
-    g.fx.glow(pos, 0xffae68, Math.min(3, radius * 0.35), 0.16);
-    g.fx.smoke(pos, 3);
-    g.fx.burst(pos, 0xffb45c, 40, 10);
-    g.fx.burst(pos, 0x8d958b, 18, 5);
+    g.fx.blasts.explosion(pos, radius, kind);
     g.audio.explosion(pos.distanceTo(g.player.position));
     let hitEnemy = false;
     if (friendly)

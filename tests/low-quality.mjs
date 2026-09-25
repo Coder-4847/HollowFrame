@@ -12,3 +12,12 @@ export function lowQuality(page) {
     } catch {}
   });
 }
+// Deploying draws one warm-up frame containing every pooled effect and enemy variant so that
+// play never stalls on first use. Under SwiftShader that frame takes a few hundred ms to
+// execute, so suites that measure input in short wall-clock windows first wait for the game
+// loop to be running at its normal pace.
+export function settled(page) {
+  return page.waitForFunction(
+    () => __HOLLOWFRAME__.state === 'playing' && __HOLLOWFRAME__.elapsed > 0.3,
+  );
+}

@@ -4,9 +4,16 @@
 
 **Play it:** https://coder-4847.github.io/HollowFrame/ (desktop browser with WebGL2, mouse and keyboard).
 
-**Version 0.12.0 — Menagerie** rebuilds every enemy and fixes rendering flicker. Twenty regular enemy types and six bosses span three factions and eight arenas, with eighteen guns, three main melee kits, four difficulties, and eight-wave operations.
+**Version 0.13.0 — Aftermath** removes the weapon-switch freeze and every other mid-fight shader stall, and adds new death effects and explosions. Twenty regular enemy types and six bosses span three factions and eight arenas, with eighteen guns, three main melee kits, four difficulties, and eight-wave operations.
 
-### What changed in 0.12.0
+### What changed in 0.13.0
+
+- **Fixed: weapon switching froze the game for 1–2 seconds.** Every switch cloned and disposed about 80 materials, and disposing the last user of a shader makes three.js discard and recompile it. Guns are now built once per loadout from shared materials, and switching just changes which one is visible: measured at 2–7 ms, down from about 1,000 ms.
+- **Fixed: other first-use stalls.** Enemy, corpse and effect materials are no longer disposed mid-fight (they are garbage-collected, so compiled shaders stay cached). Deploying pre-draws every pooled effect, projectile, holstered gun and enemy variant for the selected factions in one hidden, single-pixel frame, because some drivers (ANGLE on Windows) finish GPU setup only on the first real draw. A survey that switches every weapon, spawns and kills all 26 enemy types and fires every explosion type now compiles no new shaders during play.
+- **Explosions** (rockets, grenades, launcher clusters, Volatiles, enemy shells, boss slams): a white-hot flash, billowing fireballs cooling from yellow to red, a rim-lit pressure shell, a ground shockwave ring, a light flash on the surroundings, rising smoke columns, embers, debris and a scorch mark that fades.
+- **Death effects by faction:** Choir machines spark and blow apart, heavies chain secondary detonations, and bosses go up in a sequence of blasts before a huge final one. Brood burst in acid (goo gouts, gibs, a spore cloud and a green splat), and their bosses rupture sac by sac. Veil shatter in a bright implosion with crystal shards, an energy ring and drifting sparkles. Each faction has its own death sound, and heavy or boss kills nearby shake the view.
+
+### 0.12.0 — Menagerie
 
 - **New enemy models for all 26 types.** The Choir are articulated mechs with reverse-jointed legs, armoured torsos with glowing vents, visor heads, pauldrons, gun-pod arms that raise to aim, backpacks and exhausts, plus role kit: Bastion missile racks, a framed translucent Bulwark tower shield, the Mender's repair mast, the Lancer's rail rifle, the Fabricator's drone bay and the Cantor's halo. Skitters and Volatiles are four-legged crawlers. The Brood are insects with segmented swaying abdomens, spiked carapaces, clustered glowing eyes, snapping mandibles, pulsing acid sacs, horns and six clawed legs. The Veil are hovering crystalline wraiths with crowned heads, halos, blade or orb arms, energy shields and orbiting shards. Bosses scale these up with missile racks, rotors and exposed cores.
 - **Enemy animation:** walk cycles driven by actual movement speed, a tripod gait for insects, hovering and bobbing for the Veil, head tracking, and arms that raise to aim. Glow pulses while an attack is telegraphed, and bodies flash white when hit. Every part is still a hit target with its original gameplay role, so breaking an arm still disarms it.
@@ -158,7 +165,7 @@ Plain ES modules, Three.js, and Vite. Models, textures, maps, sound, and effects
 | `input.js`, `player.js`, `weapons.js`, `viewmodel.js` | Pointer lock, movement, firing, reload, heat, charge, melee and first-person models |
 | `movement.js`, `feel.js` | Parkour physics and its camera, sound and particle feedback |
 | `enemies.js`, `enemy-models.js`, `bosses.js`, `navigation.js` | Components, tactics, articulated models and animation, bosses and elevation-aware pathfinding |
-| `projectiles.js`, `vfx.js`, `audio.js` | Pooled projectiles/particles/tracers, smoke, debris and synthesized audio |
+| `projectiles.js`, `vfx.js`, `blasts.js`, `audio.js` | Pooled projectiles/particles/tracers, smoke, debris and synthesized audio |
 | `director.js`, `waves.js`, `upgrades.js`, `environment.js` | Encounter composition, rewards, temporary upgrades and hazards |
 | `polish.js`, `markings.js` | Validated accessibility settings, contextual hints and instanced field markings |
 | `ui.js`, `style.css` | Menus, loadout, armory, terminal, HUD and results |

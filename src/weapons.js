@@ -14,6 +14,7 @@ export class Weapons {
     this.light.position.set(0.25, -0.1, -1.2);
     this.light.layers.enable(1);
     game.world.camera.add(this.light);
+    game.world.flashLights.push(this.light);
     this.ray = new THREE.Raycaster();
     this.reset();
   }
@@ -50,12 +51,41 @@ export class Weapons {
     this.regen = 0;
     this.build();
   }
+  // Every equipped gun is built once, from shared cached materials, and switching only toggles
+  // visibility. Rebuilding (and disposing materials) on each switch forced three.js to throw
+  // away and recompile shader programs, which froze the game for about a second per switch.
   build() {
-    this.root.clear();
-    this.bolt = null;
-    const w = this.game.world,
-      d = this.current;
-    const parts = buildGun(w, this.root, d);
+    const w = this.game.world;
+    this.models ??= new Map();
+    this.flashGeometry ??= new THREE.ConeGeometry(0.14, 0.42, 5);
+    this.flashMaterial ??= new THREE.MeshBasicMaterial({ color: 0xffd7a1 });
+    for (const index of this.equipped) {
+      if (this.models.has(index)) continue;
+      const d = WEAPONS[index],
+        group = new THREE.Group(),
+        parts = buildGun(w, group, d),
+        flash = new THREE.Mesh(this.flashGeometry, this.flashMaterial);
+      flash.rotation.x = -Math.PI / 2;
+      flash.position.copy(parts.muzzle);
+      flash.visible = false;
+      group.add(flash);
+      group.traverse((m) => {
+        if (!m.isMesh) return;
+        m.castShadow = false;
+        m.receiveShadow = false;
+        if (m.userData.coil) m.material = w.material(0x73cbe2, true, 'panel', 0.8);
+      });
+      group.visible = false;
+      this.root.add(group);
+      w.viewmodel(group);
+      this.models.set(index, { group, parts, flash });
+    }
+    this.select(this.index);
+  }
+  select(index) {
+    for (const [i, model] of this.models) model.group.visible = i === index;
+    const { parts, flash } = this.models.get(index),
+      d = WEAPONS[index];
     this.bolt = parts.bolt;
     this.boltBase = parts.bolt.position.z;
     this.magazine = parts.magazine;
@@ -65,46 +95,26 @@ export class Weapons {
     this.blade = parts.blade;
     this.hammer = parts.hammer;
     this.sightHeight = parts.sightHeight;
-    this.flash = new THREE.Mesh(
-      new THREE.ConeGeometry(0.14, 0.42, 5),
-      new THREE.MeshBasicMaterial({ color: 0xffd7a1 }),
-    );
-    this.flash.rotation.x = -Math.PI / 2;
-    this.flash.position.copy(parts.muzzle);
-    this.flash.visible = false;
-    this.root.add(this.flash);
+    this.flash = flash;
     this.root.scale.setScalar(d.category === 'secondary' ? 0.58 : 0.65);
-    this.root.traverse((m) => {
-      if (m.isMesh) {
-        m.castShadow = false;
-        m.receiveShadow = false;
-        if (m !== this.flash) m.material = m.material.clone();
-        if (m.userData.coil) {
-          m.material.emissive.set(0x4eb0ca);
-          m.material.emissiveIntensity = 0.8;
-        }
-      }
-    });
-    w.viewmodel(this.root);
   }
   switch(index) {
     if (index === this.index || !this.equipped.includes(index)) return;
     this.burstRemaining = 0;
     this.chargeTime = 0;
-    this.disposeModel();
     this.index = (index + WEAPONS.length) % WEAPONS.length;
     this.reloadTime = 0;
     this.switchTime = 0.24;
     this.cooldown = 0.24;
-    this.build();
+    if (!this.models?.has(this.index)) this.build();
+    else this.select(this.index);
     this.game.audio.tone(180, 0.08, 0.05, 'triangle', 300);
   }
+  // Drops the prebuilt models (for a loadout change). Materials and geometry are shared caches,
+  // so nothing GPU-side is released and nothing needs recompiling.
   disposeModel() {
-    this.root.traverse((m) => {
-      if (m.isMesh) m.material.dispose();
-      if (m.userData.lens && m.geometry.type === 'PlaneGeometry') m.geometry.dispose();
-    });
-    if (this.flash) this.flash.geometry.dispose();
+    for (const { group } of this.models?.values() || []) this.root.remove(group);
+    this.models?.clear();
   }
   reload() {
     if (this.current.energy) {

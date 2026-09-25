@@ -96,6 +96,9 @@ export class World {
     this.floorTexture.anisotropy = 4;
     this.post = new PostPipeline(this.renderer, this.scene, this.camera);
     this.resolutionScale = 1;
+    // Transient flash lights (muzzle, explosions). Each point light adds per-pixel cost to every
+    // lit surface, so Low removes them; the count only changes with the quality setting.
+    this.flashLights = [];
     this.bufferSize = new THREE.Vector2();
     this.clock = 0;
     window.addEventListener('resize', () => this.resize());
@@ -225,10 +228,35 @@ export class World {
     this.sun.updateMatrixWorld();
   }
   // Compile every shader the arena needs up front so the first seconds of play do not hitch.
-  warmup() {
+  warmup(extra) {
+    // compile() skips hidden objects, and some GPU drivers (ANGLE on Windows included) finish
+    // pipeline setup only on the first real draw with a given blend state. So: reveal every
+    // pooled effect, projectile, holstered gun and offscreen enemy variant, disable culling, and
+    // draw one real frame through the full pipeline, scissored to a single on-screen pixel.
+    const hidden = [],
+      culled = [];
+    if (extra) this.scene.add(extra);
+    this.scene.traverse((o) => {
+      // Lights stay as they are: revealing one would compile shaders for the wrong light count.
+      if (!o.visible && !o.isLight) {
+        o.visible = true;
+        hidden.push(o);
+      }
+      if (o.frustumCulled) {
+        o.frustumCulled = false;
+        culled.push(o);
+      }
+    });
     this.camera.layers.enableAll();
     this.renderer.compile(this.scene, this.camera);
     this.camera.layers.set(0);
+    this.renderer.setScissor(0, 0, 1, 1);
+    this.renderer.setScissorTest(true);
+    this.render(0);
+    this.renderer.setScissorTest(false);
+    for (const o of hidden) o.visible = false;
+    for (const o of culled) o.frustumCulled = true;
+    if (extra) this.scene.remove(extra);
   }
   // Mark a first-person model so it is drawn in the late, unprocessed pass.
   viewmodel(object) {
@@ -281,6 +309,7 @@ export class World {
     if (!this.blackout) this.hemi.intensity = this.hemiBase;
     this.richAtmosphere = rich;
     for (const material of this.materials.values()) this.applyDetail(material);
+    for (const light of this.flashLights) light.visible = rich;
     this.post.configure({ ao: settings.quality === 'high', reducedMotion: this.reducedMotion });
     this.resize();
     this.renderer.shadowMap.enabled = settings.quality !== 'low' && settings.shadows !== false;

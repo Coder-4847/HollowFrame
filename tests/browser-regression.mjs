@@ -1,3 +1,4 @@
+import { settled } from './low-quality.mjs';
 import { chromium } from '@playwright/test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -49,6 +50,7 @@ try {
   await page.getByRole('button', { name: /SELECT OPERATION/ }).click();
   await page.getByRole('button', { name: /DEPLOY TO ASHWORKS/ }).click();
   await page.waitForFunction(() => !!document.pointerLockElement);
+  await settled(page);
   check(
     'deployment captures pointer',
     await page.evaluate(() => __HOLLOWFRAME__.state === 'playing'),
@@ -74,6 +76,7 @@ try {
   );
   await page.getByRole('button', { name: /RESUME OPERATION/ }).click();
   await page.waitForFunction(() => !!document.pointerLockElement);
+  await settled(page);
   const weak = await page.evaluate(() => {
     const g = __HOLLOWFRAME__;
     g.player.position.set(0, 0, 20);
@@ -187,6 +190,7 @@ try {
   check('death opens results', await page.getByText('YOUR SIGNAL WENT DARK.').isVisible());
   await page.getByRole('button', { name: /DEPLOY AGAIN/ }).click();
   await page.waitForFunction(() => !!document.pointerLockElement);
+  await settled(page);
   check(
     'restart clears enemies and resets resources',
     await page.evaluate(
